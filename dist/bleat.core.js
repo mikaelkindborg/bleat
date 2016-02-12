@@ -1,7 +1,7 @@
 /* @license
  *
  * BLE Abstraction Tool: core functionality - web bluetooth specification
- * Version: 0.0.16
+ * Version: 0.0.17
  *
  * The MIT License (MIT)
  *
@@ -340,7 +340,7 @@
         var scanTimeout;
         adapter.startScan(searchUUIDs, function() {
             scanTimeout = setTimeout(function() {
-                adapter.stopScan;
+                adapter.stopScan();
                 completeFn();
             }, scanTime);
         }, function(deviceInfo) {
@@ -612,7 +612,7 @@
     var BluetoothGATTDescriptor = function(properties) {
         this._handle = null;
         this.characteristic = null;
-        this.uuid = null
+        this.uuid = null;
         this.value = null;
 
         mergeDictionary(this, properties);
@@ -643,6 +643,9 @@
             adapter = definition;
             definition.init();
         },
+        Services: bluetoothServices,
+        Characteristics: bluetoothCharacteristics,
+        Descriptors: bluetoothDescriptors,
         requestDevice: function(options) {
             return new Promise(function(resolve, reject) {
                 var scanTimeout = scan(options, function(deviceInfo) {
