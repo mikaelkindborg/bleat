@@ -107,6 +107,7 @@
                 }.bind(this));
             },
             startScan: function(serviceUUIDs, completeFn, foundFn, errorFn) {
+                this.deviceHandles = {};
                 var stateCB = function(state) {
                     if (state === "poweredOn") {
                         if (serviceUUIDs.length === 0) this.foundFn = foundFn;
@@ -132,7 +133,13 @@
             connect: function(handle, connectFn, disconnectFn, errorFn) {
                 var baseDevice = this.deviceHandles[handle];
                 baseDevice.once("connect", connectFn);
-                baseDevice.once("disconnect", disconnectFn);
+                baseDevice.once("disconnect", function() {
+                    this.serviceHandles = {};
+                    this.characteristicHandles = {};
+                    this.descriptorHandles = {};
+                    this.charNotifies = {};
+                    disconnectFn();
+                }.bind(this));
                 baseDevice.connect(checkForError(errorFn));
             },
             disconnect: function(handle, errorFn) {

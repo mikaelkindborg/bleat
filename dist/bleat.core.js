@@ -27,7 +27,7 @@
  */
 
 // TODO:
-//  service filtering
+//  service filtering based on filter and optional sent in
 //  service events
 //  evothings
 //  chromeos
@@ -323,7 +323,7 @@
         }
     }
 
-    function scan(options, foundFn, completeFn, errorfn) {
+    function scan(options, foundFn, completeFn, errorFn) {
         var searchUUIDs = [];
         if (options.filters) {
             options.filters.forEach(function(filter) {
@@ -347,9 +347,8 @@
             // To do: filter devices and advertised services
 //                  var accessibleUUIDs = options.optionalServices ? options.filters.services.map(getServiceUUID) : [];
 //                  accessibleUUIDs = accessibleUUIDs.concat(searchUUIDs);
-            foundFn(deviceInfo);
-        }, errorfn);
-        return scanTimeout;
+            foundFn(deviceInfo, scanTimeout);
+        }, errorFn);
     }
 
     var events = {};
@@ -427,32 +426,41 @@
     var BluetoothGATTRemoteServer = function() {
         this.device = null;
         this.connected = false;
+        this._services = null;
     };
     BluetoothGATTRemoteServer.prototype.disconnect = function() {
         adapter.disconnect(this.device._handle);
         this.connected = false;
     };
-    BluetoothGATTRemoteServer.prototype.getPrimaryService = function(service) {
+    BluetoothGATTRemoteServer.prototype.getPrimaryService = function(serviceUUID) {
         return new Promise(function(resolve, reject) {
-            if (!service) return reject("getPrimaryService error: no service specified");
-            adapter.discoverServices(this.device._handle, [getServiceUUID(service)], function(services) {
-                // To do: filter services
-                if (services.length === 0) return reject("getPrimaryService error: service not found");
-                services[0].device = this.device;
-                resolve(new BluetoothGATTService(services[0]));
-            }.bind(this), wrapReject(reject, "getPrimaryService error"));
+            if (!serviceUUID) return reject("getPrimaryService error: no service specified");
+            this.getPrimaryServices(serviceUUID)
+            .then(services => {
+                if (services.length !== 1) return reject("getPrimaryService error: service not found");
+                resolve(services[0]);
+            })
+            .catch(error => reject(error));
         }.bind(this));
     };
-    BluetoothGATTRemoteServer.prototype.getPrimaryServices = function(service) {
-        var serviceUUIDs = service ? [getServiceUUID(service)] : [];
+    BluetoothGATTRemoteServer.prototype.getPrimaryServices = function(serviceUUID) {
         return new Promise(function(resolve, reject) {
-            adapter.discoverServices(this.device._handle, serviceUUIDs, function(services) {
-                // To do: filter services
-                if (service && services.length === 0) return reject("getPrimaryServices error: service not found");
-                resolve(services.map(function(serviceInfo) {
+            function complete() {
+                if (!serviceUUID) return resolve(this._services);
+                var filtered = this._services.filter(function(service) {
+                    return (service.uuid === getServiceUUID(serviceUUID));
+                });
+                if (filtered.length !== 1) return reject("getPrimaryServices error: service not found");
+                resolve(filtered);
+            }
+            if (this._services) return complete.call(this);
+            adapter.discoverServices(this.device._handle, [], function(services) {
+                // filter services
+                this._services = services.map(function(serviceInfo) {
                     serviceInfo.device = this.device;
                     return new BluetoothGATTService(serviceInfo);
-                }.bind(this)));
+                }.bind(this));
+                complete.call(this);
             }.bind(this), wrapReject(reject, "getPrimaryServices error"));
         }.bind(this));
     };
@@ -471,52 +479,71 @@
         this.device = null;
         this.uuid = null;
         this.isPrimary = false;
+        this._characteristics = null;
+        this._services = null;
 
         mergeDictionary(this, properties);
     };
-    BluetoothGATTService.prototype.getCharacteristic = function(characteristic) {
+    BluetoothGATTService.prototype.getCharacteristic = function(characteristicUUID) {
         return new Promise(function(resolve, reject) {
-            if (!characteristic) return reject("getCharacteristic error: no characteristic specified");
-            adapter.discoverCharacteristics(this._handle, [getCharacteristicUUID(characteristic)], function(characteristics) {
-                if (characteristics.length === 0) return reject("getCharacteristic error: characteristic not found");
-                characteristics[0].service = this;
-                resolve(new BluetoothGATTCharacteristic(characteristics[0]));
-            }.bind(this), wrapReject(reject, "getCharacteristic error"));
+            if (!characteristicUUID) return reject("getCharacteristic error: no characteristic specified");
+            this.getCharacteristics(characteristicUUID)
+            .then(characteristics => {
+                if (characteristics.length !== 1) return reject("getCharacteristic error: characteristic not found");
+                resolve(characteristics[0]);
+            })
+            .catch(error => reject(error));
         }.bind(this));
     };
-    BluetoothGATTService.prototype.getCharacteristics = function(characteristic) {
-        var characteristicUUIDs = characteristic ? [getCharacteristicUUID(characteristic)] : [];
+    BluetoothGATTService.prototype.getCharacteristics = function(characteristicUUID) {
         return new Promise(function(resolve, reject) {
-            adapter.discoverCharacteristics(this._handle, characteristicUUIDs, function(characteristics) {
-                if (characteristic && characteristics.length === 0) return reject("getCharacteristics error: characteristic not found");
-                resolve(characteristics.map(function(characteristicInfo) {
+            function complete() {
+                if (!characteristicUUID) return resolve(this._characteristics);
+                var filtered = this._characteristics.filter(function(characteristic) {
+                    return (characteristic.uuid === getCharacteristicUUID(characteristicUUID));
+                });
+                if (filtered.length !== 1) return reject("getCharacteristics error: characteristic not found");
+                resolve(filtered);
+            }
+            if (this._characteristics) return complete.call(this);
+            adapter.discoverCharacteristics(this._handle, [], function(characteristics) {
+                this._characteristics = characteristics.map(function(characteristicInfo) {
                     characteristicInfo.service = this;
                     return new BluetoothGATTCharacteristic(characteristicInfo);
-                }.bind(this)));
+                }.bind(this));
+                complete.call(this);
             }.bind(this), wrapReject(reject, "getCharacteristics error"));
         }.bind(this));
     };
-    BluetoothGATTService.prototype.getIncludedService = function(service) {
+    BluetoothGATTService.prototype.getIncludedService = function(serviceUUID) {
         return new Promise(function(resolve, reject) {
-            if (!service) return reject("getIncludedService error: no service specified");
-            adapter.discoverIncludedServices(this._handle, [getServiceUUID(service)], function(services) {
-                // To do: filter services
-                if (services.length === 0) return reject("getIncludedService error: service not found");
-                services[0].device = this.device;
-                resolve(new BluetoothGATTService(services[0]));
-            }.bind(this), wrapReject(reject, "getIncludedService error"));
+            if (!serviceUUID) return reject("getIncludedService error: no service specified");
+            this.getIncludedServices(serviceUUID)
+            .then(services => {
+                if (services.length !== 1) return reject("getIncludedService error: service not found");
+                resolve(services[0]);
+            })
+            .catch(error => reject(error));
         }.bind(this));
     };
-    BluetoothGATTService.prototype.getIncludedServices = function(service) {
-        var serviceUUIDs = service ? [getServiceUUID(service)] : [];
+    BluetoothGATTService.prototype.getIncludedServices = function(serviceUUID) {
         return new Promise(function(resolve, reject) {
-            adapter.discoverIncludedServices(this._handle, serviceUUIDs, function(services) {
-                // To do: filter services
-                if (service && services.length === 0) return reject("getIncludedServices error: service not found");
-                resolve(services.map(function(serviceInfo) {
+            function complete() {
+                if (!serviceUUID) return resolve(this._services);
+                var filtered = this._services.filter(function(service) {
+                    return (service.uuid === getServiceUUID(serviceUUID));
+                });
+                if (filtered.length !== 1) return reject("getIncludedServices error: service not found");
+                resolve(filtered);
+            }
+            if (this._services) return complete.call(this);
+            adapter.discoverIncludedServices(this._handle, [], function(services) {
+                // filter services
+                this._services = services.map(function(serviceInfo) {
                     serviceInfo.device = this.device;
                     return new BluetoothGATTService(serviceInfo);
-                }.bind(this)));
+                }.bind(this));
+                complete.call(this);
             }.bind(this), wrapReject(reject, "getIncludedServices error"));
         }.bind(this));
     };
@@ -546,28 +573,38 @@
             reliableWrite: false,
             writableAuxiliaries: false
         };
+        this._descriptors = null;
 
         mergeDictionary(this, properties);
     };
-    BluetoothGATTCharacteristic.prototype.getDescriptor = function(descriptor) {
+    BluetoothGATTCharacteristic.prototype.getDescriptor = function(descriptorUUID) {
         return new Promise(function(resolve, reject) {
-            if (!descriptor) return reject("getDescriptor error: no descriptor specified");
-            adapter.discoverDescriptors(this._handle, [getDescriptorUUID(descriptor)], function(descriptors) {
-                if (descriptors.length === 0) return reject("getDescriptor error: descriptor not found");
-                descriptors[0].characteristic = this;
-                resolve(new BluetoothGATTDescriptor(descriptors[0]));
-            }.bind(this), wrapReject(reject, "getDescriptor error"));
+            if (!descriptorUUID) return reject("getDescriptor error: no descriptor specified");
+            this.getDescriptors(descriptorUUID)
+            .then(descriptors => {
+                if (descriptors.length !== 1) return reject("getDescriptor error: descriptor not found");
+                resolve(descriptors[0]);
+            })
+            .catch(error => reject(error));
         }.bind(this));
     };
-    BluetoothGATTCharacteristic.prototype.getDescriptors = function(descriptor) {
-        var descriptorUUIDs = descriptor ? [getDescriptorUUID(descriptor)] : [];
+    BluetoothGATTCharacteristic.prototype.getDescriptors = function(descriptorUUID) {
         return new Promise(function(resolve, reject) {
-            adapter.discoverDescriptors(this._handle, descriptorUUIDs, function(descriptors) {
-                if (descriptor && descriptors.length === 0) return reject("getDescriptors error: descriptor not found");
-                resolve(descriptors.map(function(descriptorInfo) {
+            function complete() {
+                if (!descriptorUUID) return resolve(this._descriptors);
+                var filtered = this._descriptors.filter(function(descriptor) {
+                    return (descriptor.uuid === getDescriptorUUID(descriptorUUID));
+                });
+                if (filtered.length !== 1) return reject("getDescriptors error: descriptor not found");
+                resolve(filtered);
+            }
+            if (this._descriptors) return complete.call(this);
+            adapter.discoverDescriptors(this._handle, [], function(descriptors) {
+                this._descriptors = descriptors.map(function(descriptorInfo) {
                     descriptorInfo.characteristic = this;
                     return new BluetoothGATTDescriptor(descriptorInfo);
-                }.bind(this)));
+                }.bind(this));
+                complete.call(this);
             }.bind(this), wrapReject(reject, "getDescriptors error"));
         }.bind(this));
     };
@@ -595,12 +632,12 @@
                 this.value = arrayBuffer;
                 this.dispatchEvent({ type: "characteristicvaluechanged", bubbles: true });
             }.bind(this), resolve, wrapReject(reject, "startNotifications error"));
-        });
+        }.bind(this));
     };
     BluetoothGATTCharacteristic.prototype.stopNotifications = function() {
         return new Promise(function(resolve, reject) {
             adapter.disableNotify(this._handle, resolve, wrapReject(reject, "stopNotifications error"));
-        });
+        }.bind(this));
     };
     BluetoothGATTCharacteristic.prototype.addEventListener = createListenerFn([
         "characteristicvaluechanged"
@@ -648,7 +685,7 @@
         Descriptors: bluetoothDescriptors,
         requestDevice: function(options) {
             return new Promise(function(resolve, reject) {
-                var scanTimeout = scan(options, function(deviceInfo) {
+                scan(options, function(deviceInfo, scanTimeout) {
                     if (scanTimeout) clearTimeout(scanTimeout);
                     adapter.stopScan();
                     resolve(new BluetoothDevice(deviceInfo));
