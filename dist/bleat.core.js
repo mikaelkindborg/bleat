@@ -374,16 +374,9 @@
     // BluetoothDevice Object
     var BluetoothDevice = function(properties) {
         this._handle = null;
+
         this.id = "unknown"; 
         this.name = null;
-        this.vendorIDSource = "bluetooth";
-        this.vendorID = null;
-        this.productID = null;
-        this.productVersion = null;
-        this.deviceClass = null;
-        this.paired = false;
-        this.gattServer = null;
-        this.uuids = [];
         this.adData = {
             appearance: null,
             txPower: null,
@@ -391,6 +384,13 @@
             manufacturerData: new Map(),
             serviceData: new Map()
         };
+        this.deviceClass = null;
+        this.vendorIDSource = "bluetooth";
+        this.vendorID = null;
+        this.productID = null;
+        this.productVersion = null;
+        this.gattServer = null;
+        this.uuids = [];
 
         mergeDictionary(this, properties);
     };
@@ -417,9 +417,10 @@
 
     // BluetoothGATTRemoteServer Object
     var BluetoothGATTRemoteServer = function() {
+        this._services = null;
+
         this.device = null;
         this.connected = false;
-        this._services = null;
     };
     BluetoothGATTRemoteServer.prototype.disconnect = function() {
         adapter.disconnect(this.device._handle);
@@ -471,11 +472,12 @@
     // BluetoothGATTService Object
     var BluetoothGATTService = function(properties) {
         this._handle = null;
+        this._services = null;
+        this._characteristics = null;
+
         this.device = null;
         this.uuid = null;
         this.isPrimary = false;
-        this._characteristics = null;
-        this._services = null;
 
         mergeDictionary(this, properties);
     };
@@ -558,9 +560,10 @@
     // BluetoothGATTCharacteristic Object
     var BluetoothGATTCharacteristic = function(properties) {
         this._handle = null;
+        this._descriptors = null;
+
         this.service = null;
         this.uuid = null;
-        this.value = null;
         this.properties = {
             broadcast: false,
             read: false,
@@ -572,7 +575,7 @@
             reliableWrite: false,
             writableAuxiliaries: false
         };
-        this._descriptors = null;
+        this.value = null;
 
         mergeDictionary(this, properties);
     };
@@ -649,6 +652,7 @@
     // BluetoothGATTDescriptor Object
     var BluetoothGATTDescriptor = function(properties) {
         this._handle = null;
+
         this.characteristic = null;
         this.uuid = null;
         this.value = null;

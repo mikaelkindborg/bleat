@@ -54,7 +54,6 @@ var bleat = require('bleat');
 Specification Updates:
  * https://github.com/WebBluetoothCG/web-bluetooth/pull/174
  * https://github.com/WebBluetoothCG/web-bluetooth/pull/187
- * https://github.com/WebBluetoothCG/web-bluetooth/pull/197
  * https://github.com/WebBluetoothCG/web-bluetooth/pull/201
  * https://github.com/WebBluetoothCG/web-bluetooth/pull/205
  * https://github.com/WebBluetoothCG/web-bluetooth/pull/206
