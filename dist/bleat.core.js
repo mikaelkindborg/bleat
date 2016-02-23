@@ -389,22 +389,11 @@
         this.vendorID = null;
         this.productID = null;
         this.productVersion = null;
-        this.gattServer = null;
+        this.gatt = new BluetoothRemoteGATTServer();
+        this.gatt.device = this;
         this.uuids = [];
 
         mergeDictionary(this, properties);
-    };
-    BluetoothDevice.prototype.connectGATT = function() {
-        return new Promise(function(resolve, reject) {
-            adapter.connect(this._handle, function() {
-                this.gattServer = new BluetoothGATTRemoteServer();
-                this.gattServer.device = this;
-                this.gattServer.connected = true;
-                resolve(this.gattServer);
-            }.bind(this), function() {
-                this.gattServer.connected = false;
-            }.bind(this), wrapReject(reject, "connectGATT error"));
-        }.bind(this));
     };
     BluetoothDevice.prototype.addEventListener = createListenerFn([
         "characteristicvaluechanged",
@@ -415,18 +404,28 @@
     BluetoothDevice.prototype.removeEventListener = removeEventListener;
     BluetoothDevice.prototype.dispatchEvent = dispatchEvent;
 
-    // BluetoothGATTRemoteServer Object
-    var BluetoothGATTRemoteServer = function() {
+    // BluetoothRemoteGATTServer Object
+    var BluetoothRemoteGATTServer = function() {
         this._services = null;
 
         this.device = null;
         this.connected = false;
     };
-    BluetoothGATTRemoteServer.prototype.disconnect = function() {
+    BluetoothRemoteGATTServer.prototype.connect = function() {
+        return new Promise(function(resolve, reject) {
+            adapter.connect(this.device._handle, function() {
+                this.connected = true;
+                resolve(this);
+            }.bind(this), function() {
+                this.connected = false;
+            }.bind(this), wrapReject(reject, "connect error"));
+        }.bind(this));
+    };
+    BluetoothRemoteGATTServer.prototype.disconnect = function() {
         adapter.disconnect(this.device._handle);
         this.connected = false;
     };
-    BluetoothGATTRemoteServer.prototype.getPrimaryService = function(serviceUUID) {
+    BluetoothRemoteGATTServer.prototype.getPrimaryService = function(serviceUUID) {
         return new Promise(function(resolve, reject) {
             if (!serviceUUID) return reject("getPrimaryService error: no service specified");
             this.getPrimaryServices(serviceUUID)
@@ -439,7 +438,7 @@
             });
         }.bind(this));
     };
-    BluetoothGATTRemoteServer.prototype.getPrimaryServices = function(serviceUUID) {
+    BluetoothRemoteGATTServer.prototype.getPrimaryServices = function(serviceUUID) {
         return new Promise(function(resolve, reject) {
             function complete() {
                 if (!serviceUUID) return resolve(this._services);
@@ -454,23 +453,23 @@
                 // filter services
                 this._services = services.map(function(serviceInfo) {
                     serviceInfo.device = this.device;
-                    return new BluetoothGATTService(serviceInfo);
+                    return new BluetoothRemoteGATTService(serviceInfo);
                 }.bind(this));
                 complete.call(this);
             }.bind(this), wrapReject(reject, "getPrimaryServices error"));
         }.bind(this));
     };
-    BluetoothGATTRemoteServer.prototype.addEventListener = createListenerFn([
+    BluetoothRemoteGATTServer.prototype.addEventListener = createListenerFn([
         "characteristicvaluechanged",
         "serviceadded",
         "servicechanged",
         "serviceremoved"
     ]);
-    BluetoothGATTRemoteServer.prototype.removeEventListener = removeEventListener;
-    BluetoothGATTRemoteServer.prototype.dispatchEvent = dispatchEvent;
+    BluetoothRemoteGATTServer.prototype.removeEventListener = removeEventListener;
+    BluetoothRemoteGATTServer.prototype.dispatchEvent = dispatchEvent;
 
-    // BluetoothGATTService Object
-    var BluetoothGATTService = function(properties) {
+    // BluetoothRemoteGATTService Object
+    var BluetoothRemoteGATTService = function(properties) {
         this._handle = null;
         this._services = null;
         this._characteristics = null;
@@ -481,7 +480,7 @@
 
         mergeDictionary(this, properties);
     };
-    BluetoothGATTService.prototype.getCharacteristic = function(characteristicUUID) {
+    BluetoothRemoteGATTService.prototype.getCharacteristic = function(characteristicUUID) {
         return new Promise(function(resolve, reject) {
             if (!characteristicUUID) return reject("getCharacteristic error: no characteristic specified");
             this.getCharacteristics(characteristicUUID)
@@ -494,7 +493,7 @@
             });
         }.bind(this));
     };
-    BluetoothGATTService.prototype.getCharacteristics = function(characteristicUUID) {
+    BluetoothRemoteGATTService.prototype.getCharacteristics = function(characteristicUUID) {
         return new Promise(function(resolve, reject) {
             function complete() {
                 if (!characteristicUUID) return resolve(this._characteristics);
@@ -508,13 +507,13 @@
             adapter.discoverCharacteristics(this._handle, [], function(characteristics) {
                 this._characteristics = characteristics.map(function(characteristicInfo) {
                     characteristicInfo.service = this;
-                    return new BluetoothGATTCharacteristic(characteristicInfo);
+                    return new BluetoothRemoteGATTCharacteristic(characteristicInfo);
                 }.bind(this));
                 complete.call(this);
             }.bind(this), wrapReject(reject, "getCharacteristics error"));
         }.bind(this));
     };
-    BluetoothGATTService.prototype.getIncludedService = function(serviceUUID) {
+    BluetoothRemoteGATTService.prototype.getIncludedService = function(serviceUUID) {
         return new Promise(function(resolve, reject) {
             if (!serviceUUID) return reject("getIncludedService error: no service specified");
             this.getIncludedServices(serviceUUID)
@@ -527,7 +526,7 @@
             });
         }.bind(this));
     };
-    BluetoothGATTService.prototype.getIncludedServices = function(serviceUUID) {
+    BluetoothRemoteGATTService.prototype.getIncludedServices = function(serviceUUID) {
         return new Promise(function(resolve, reject) {
             function complete() {
                 if (!serviceUUID) return resolve(this._services);
@@ -542,23 +541,23 @@
                 // filter services
                 this._services = services.map(function(serviceInfo) {
                     serviceInfo.device = this.device;
-                    return new BluetoothGATTService(serviceInfo);
+                    return new BluetoothRemoteGATTService(serviceInfo);
                 }.bind(this));
                 complete.call(this);
             }.bind(this), wrapReject(reject, "getIncludedServices error"));
         }.bind(this));
     };
-    BluetoothGATTService.prototype.addEventListener = createListenerFn([
+    BluetoothRemoteGATTService.prototype.addEventListener = createListenerFn([
         "characteristicvaluechanged",
         "serviceadded",
         "servicechanged",
         "serviceremoved"
     ]);
-    BluetoothGATTService.prototype.removeEventListener = removeEventListener;
-    BluetoothGATTService.prototype.dispatchEvent = dispatchEvent;
+    BluetoothRemoteGATTService.prototype.removeEventListener = removeEventListener;
+    BluetoothRemoteGATTService.prototype.dispatchEvent = dispatchEvent;
 
-    // BluetoothGATTCharacteristic Object
-    var BluetoothGATTCharacteristic = function(properties) {
+    // BluetoothRemoteGATTCharacteristic Object
+    var BluetoothRemoteGATTCharacteristic = function(properties) {
         this._handle = null;
         this._descriptors = null;
 
@@ -579,7 +578,7 @@
 
         mergeDictionary(this, properties);
     };
-    BluetoothGATTCharacteristic.prototype.getDescriptor = function(descriptorUUID) {
+    BluetoothRemoteGATTCharacteristic.prototype.getDescriptor = function(descriptorUUID) {
         return new Promise(function(resolve, reject) {
             if (!descriptorUUID) return reject("getDescriptor error: no descriptor specified");
             this.getDescriptors(descriptorUUID)
@@ -592,7 +591,7 @@
             });
         }.bind(this));
     };
-    BluetoothGATTCharacteristic.prototype.getDescriptors = function(descriptorUUID) {
+    BluetoothRemoteGATTCharacteristic.prototype.getDescriptors = function(descriptorUUID) {
         return new Promise(function(resolve, reject) {
             function complete() {
                 if (!descriptorUUID) return resolve(this._descriptors);
@@ -606,13 +605,13 @@
             adapter.discoverDescriptors(this._handle, [], function(descriptors) {
                 this._descriptors = descriptors.map(function(descriptorInfo) {
                     descriptorInfo.characteristic = this;
-                    return new BluetoothGATTDescriptor(descriptorInfo);
+                    return new BluetoothRemoteGATTDescriptor(descriptorInfo);
                 }.bind(this));
                 complete.call(this);
             }.bind(this), wrapReject(reject, "getDescriptors error"));
         }.bind(this));
     };
-    BluetoothGATTCharacteristic.prototype.readValue = function() {
+    BluetoothRemoteGATTCharacteristic.prototype.readValue = function() {
         return new Promise(function(resolve, reject) {
             adapter.readCharacteristic(this._handle, function(dataView) {
                 this.value = dataView;
@@ -621,7 +620,7 @@
             }.bind(this), wrapReject(reject, "readValue error"));
         }.bind(this));
     };
-    BluetoothGATTCharacteristic.prototype.writeValue = function(bufferSource) {
+    BluetoothRemoteGATTCharacteristic.prototype.writeValue = function(bufferSource) {
         var arrayBuffer = bufferSource.buffer || bufferSource;
         var dataView = new DataView(arrayBuffer);
         return new Promise(function(resolve, reject) {
@@ -631,7 +630,7 @@
             }.bind(this), wrapReject(reject, "writeValue error"));
         }.bind(this));
     };
-    BluetoothGATTCharacteristic.prototype.startNotifications = function() {
+    BluetoothRemoteGATTCharacteristic.prototype.startNotifications = function() {
         return new Promise(function(resolve, reject) {
             adapter.enableNotify(this._handle, function(dataView) {
                 this.value = dataView;
@@ -639,19 +638,19 @@
             }.bind(this), resolve, wrapReject(reject, "startNotifications error"));
         }.bind(this));
     };
-    BluetoothGATTCharacteristic.prototype.stopNotifications = function() {
+    BluetoothRemoteGATTCharacteristic.prototype.stopNotifications = function() {
         return new Promise(function(resolve, reject) {
             adapter.disableNotify(this._handle, resolve, wrapReject(reject, "stopNotifications error"));
         }.bind(this));
     };
-    BluetoothGATTCharacteristic.prototype.addEventListener = createListenerFn([
+    BluetoothRemoteGATTCharacteristic.prototype.addEventListener = createListenerFn([
         "characteristicvaluechanged"
     ]);
-    BluetoothGATTCharacteristic.prototype.removeEventListener = removeEventListener;
-    BluetoothGATTCharacteristic.prototype.dispatchEvent = dispatchEvent;
+    BluetoothRemoteGATTCharacteristic.prototype.removeEventListener = removeEventListener;
+    BluetoothRemoteGATTCharacteristic.prototype.dispatchEvent = dispatchEvent;
 
-    // BluetoothGATTDescriptor Object
-    var BluetoothGATTDescriptor = function(properties) {
+    // BluetoothRemoteGATTDescriptor Object
+    var BluetoothRemoteGATTDescriptor = function(properties) {
         this._handle = null;
 
         this.characteristic = null;
@@ -660,7 +659,7 @@
 
         mergeDictionary(this, properties);
     };
-    BluetoothGATTDescriptor.prototype.readValue = function() {
+    BluetoothRemoteGATTDescriptor.prototype.readValue = function() {
         return new Promise(function(resolve, reject) {
             adapter.readDescriptor(this._handle, function(dataView) {
                 this.value = dataView;
@@ -668,7 +667,7 @@
             }.bind(this), wrapReject(reject, "readValue error"));
         }.bind(this));
     };
-    BluetoothGATTDescriptor.prototype.writeValue = function(bufferSource) {
+    BluetoothRemoteGATTDescriptor.prototype.writeValue = function(bufferSource) {
         var arrayBuffer = bufferSource.buffer || bufferSource;
         var dataView = new DataView(arrayBuffer);
         return new Promise(function(resolve, reject) {
