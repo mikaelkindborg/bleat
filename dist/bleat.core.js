@@ -396,10 +396,7 @@
         mergeDictionary(this, properties);
     };
     BluetoothDevice.prototype.addEventListener = createListenerFn([
-        "characteristicvaluechanged",
-        "serviceadded",
-        "servicechanged",
-        "serviceremoved"
+        "gattserverdisconnected",
     ]);
     BluetoothDevice.prototype.removeEventListener = removeEventListener;
     BluetoothDevice.prototype.dispatchEvent = dispatchEvent;
@@ -418,6 +415,7 @@
                 resolve(this);
             }.bind(this), function() {
                 this.connected = false;
+                this.device.dispatchEvent({ type: "gattserverdisconnected", bubbles: true });
             }.bind(this), wrapReject(reject, "connect error"));
         }.bind(this));
     };
@@ -459,14 +457,6 @@
             }.bind(this), wrapReject(reject, "getPrimaryServices error"));
         }.bind(this));
     };
-    BluetoothRemoteGATTServer.prototype.addEventListener = createListenerFn([
-        "characteristicvaluechanged",
-        "serviceadded",
-        "servicechanged",
-        "serviceremoved"
-    ]);
-    BluetoothRemoteGATTServer.prototype.removeEventListener = removeEventListener;
-    BluetoothRemoteGATTServer.prototype.dispatchEvent = dispatchEvent;
 
     // BluetoothRemoteGATTService Object
     var BluetoothRemoteGATTService = function(properties) {
@@ -479,6 +469,7 @@
         this.isPrimary = false;
 
         mergeDictionary(this, properties);
+        this.dispatchEvent({ type: "serviceadded", bubbles: true });
     };
     BluetoothRemoteGATTService.prototype.getCharacteristic = function(characteristicUUID) {
         return new Promise(function(resolve, reject) {
@@ -548,7 +539,6 @@
         }.bind(this));
     };
     BluetoothRemoteGATTService.prototype.addEventListener = createListenerFn([
-        "characteristicvaluechanged",
         "serviceadded",
         "servicechanged",
         "serviceremoved"
@@ -711,14 +701,6 @@
                     }));
                 }, wrapReject(reject, "requestDevices error"));
             });
-        },
-        addEventListener: createListenerFn([
-            "characteristicvaluechanged",
-            "serviceadded",
-            "servicechanged",
-            "serviceremoved"
-        ]),
-        removeEventListener: removeEventListener,
-        dispatchEvent: dispatchEvent
+        }
     };
 }));

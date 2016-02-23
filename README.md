@@ -47,11 +47,13 @@ var bleat = require('bleat');
 ```
 
 ### To Do
+ * Merge back to master with API/interface type; bleat.classic or bleat.web-bluetooth
+ * Add requestDevice() callback hook to allow headless implementations select a device
  * Implement service filtering based on filters and optional services passed in
+ * Implement BluetoothRemoteGATTService servicechanged / serviceremoved events
  * Evothings adapter
  * ChromeOS adapter
 
 Specification Updates:
  * https://github.com/WebBluetoothCG/web-bluetooth/pull/174
  * https://github.com/WebBluetoothCG/web-bluetooth/pull/187
- * https://github.com/WebBluetoothCG/web-bluetooth/pull/206
