@@ -60,7 +60,10 @@
             descriptorHandles: {},
             charNotifies: {},
             foundFn: null,
-            init: function() {
+            initialised: false,
+            init: function(continueFn, errorFn) {
+                if (this.initialised) return continueFn();
+
                 noble.on('discover', function(deviceInfo) {
                     if (this.foundFn) {
                         var deviceID = (deviceInfo.address && deviceInfo.address !== "unknown") ? deviceInfo.address : deviceInfo.id;
@@ -105,26 +108,30 @@
                         });
                     }
                 }.bind(this));
+                this.initialised = true;
+                continueFn();
             },
-            startScan: function(serviceUUIDs, completeFn, foundFn, errorFn) {
-                this.deviceHandles = {};
-                var stateCB = function(state) {
-                    if (state === "poweredOn") {
-                        if (serviceUUIDs.length === 0) this.foundFn = foundFn;
-                        else this.foundFn = function(device) {
-                            serviceUUIDs.forEach(function(serviceUUID) {
-                                if (device.uuids.indexOf(serviceUUID) >= 0) {
-                                    foundFn(device);
-                                    return;
-                                }
-                            });
-                        };
-                        noble.startScanning([], false, checkForError(errorFn, completeFn));
-                    }
-                    else errorFn("adapter not enabled");
-                }.bind(this);
-                if (noble.state === "unknown") noble.once('stateChange', stateCB.bind(this));
-                else stateCB(noble.state);
+            startScan: function(serviceUUIDs, foundFn, completeFn, errorFn) {
+                this.init(function() {
+                    this.deviceHandles = {};
+                    var stateCB = function(state) {
+                        if (state === "poweredOn") {
+                            if (serviceUUIDs.length === 0) this.foundFn = foundFn;
+                            else this.foundFn = function(device) {
+                                serviceUUIDs.forEach(function(serviceUUID) {
+                                    if (device.uuids.indexOf(serviceUUID) >= 0) {
+                                        foundFn(device);
+                                        return;
+                                    }
+                                });
+                            };
+                            noble.startScanning([], false, checkForError(errorFn, completeFn));
+                        }
+                        else errorFn("adapter not enabled");
+                    }.bind(this);
+                    if (noble.state === "unknown") noble.once('stateChange', stateCB.bind(this));
+                    else stateCB(noble.state);
+                }.bind(this), errorFn);
             },
             stopScan: function(errorFn) {
                 this.foundFn = null;

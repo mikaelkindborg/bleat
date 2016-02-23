@@ -331,16 +331,16 @@
 
         var scanTime = options.scanTime || defaultScanTime;
         var scanTimeout;
-        adapter.startScan(searchUUIDs, function() {
-            scanTimeout = setTimeout(function() {
-                adapter.stopScan();
-                completeFn();
-            }, scanTime);
-        }, function(deviceInfo) {
+        adapter.startScan(searchUUIDs, function(deviceInfo) {
             // To do: filter devices and advertised services
 //                  var accessibleUUIDs = options.optionalServices ? options.filters.services.map(getServiceUUID) : [];
 //                  accessibleUUIDs = accessibleUUIDs.concat(searchUUIDs);
             foundFn(deviceInfo, scanTimeout);
+        }, function() {
+            scanTimeout = setTimeout(function() {
+                adapter.stopScan();
+                completeFn();
+            }, scanTime);
         }, errorFn);
     }
 
@@ -679,7 +679,6 @@
         _addAdapter: function(adapterName, definition) {
             adapters[adapterName] = definition;
             adapter = definition;
-            definition.init();
         },
         Services: bluetoothServices,
         Characteristics: bluetoothCharacteristics,
