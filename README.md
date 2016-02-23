@@ -36,8 +36,6 @@ e.g.
 ```
 <script src="path/to/bleat.core.js"></script>
 <script src="path/to/bleat.<adapter>.js"></script>
-      -or-
-<script src="path/to/bleat.min.js"></script>
 ```
 
 ### Node.js
@@ -47,3 +45,17 @@ Simply require it up!
 ```
 var bleat = require('bleat');
 ```
+
+### To Do
+ * Implement service filtering based on filters and optional services passed in
+ * Evothings adapter
+ * ChromeOS adapter
+
+Specification Updates:
+ * https://github.com/WebBluetoothCG/web-bluetooth/pull/174
+ * https://github.com/WebBluetoothCG/web-bluetooth/pull/187
+ * https://github.com/WebBluetoothCG/web-bluetooth/pull/197
+ * https://github.com/WebBluetoothCG/web-bluetooth/pull/201
+ * https://github.com/WebBluetoothCG/web-bluetooth/pull/205
+ * https://github.com/WebBluetoothCG/web-bluetooth/pull/206
+ * https://github.com/WebBluetoothCG/web-bluetooth/pull/207

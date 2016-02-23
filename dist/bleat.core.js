@@ -26,13 +26,6 @@
  * SOFTWARE.
  */
 
-// TODO:
-//  service filtering based on filter and optional sent in
-//  service events
-//  evothings
-//  chromeos
-//  examples
-
 // https://github.com/umdjs/umd
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
