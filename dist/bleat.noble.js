@@ -1,11 +1,11 @@
 /* @license
  *
  * BLE Abstraction Tool: noble adapter
- * Version: 0.0.4
+ * Version: 0.0.5
  *
  * The MIT License (MIT)
  *
- * Copyright (c) 2015 Rob Moran
+ * Copyright (c) 2016 Rob Moran
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -261,6 +261,10 @@
                 this.characteristicHandles[handle].write(buffer, true, checkForError(errorFn, completeFn));
             },
             enableNotify: function(handle, notifyFn, completeFn, errorFn) {
+                if (this.charNotifies[handle]) {
+                    this.charNotifies[handle] = notifyFn;
+                    return completeFn();
+                }
                 this.characteristicHandles[handle].once("notify", function(state) {
                     if (state !== true) return errorFn("notify failed to enable");
                     this.charNotifies[handle] = notifyFn;
@@ -269,6 +273,9 @@
                 this.characteristicHandles[handle].notify(true, checkForError(errorFn));
             },
             disableNotify: function(handle, completeFn, errorFn) {
+                if (!this.charNotifies[characteristic.uuid]) {
+                    return completeFn();
+                }
                 this.characteristicHandles[handle].once("notify", function(state) {
                     if (state !== false) return errorFn("notify failed to disable");
                     if (this.charNotifies[handle]) delete this.charNotifies[handle];
