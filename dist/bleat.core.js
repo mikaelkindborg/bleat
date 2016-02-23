@@ -5,7 +5,7 @@
  *
  * The MIT License (MIT)
  *
- * Copyright (c) 2015 Rob Moran
+ * Copyright (c) 2016 Rob Moran
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -436,11 +436,13 @@
         return new Promise(function(resolve, reject) {
             if (!serviceUUID) return reject("getPrimaryService error: no service specified");
             this.getPrimaryServices(serviceUUID)
-            .then(services => {
+            .then(function(services) {
                 if (services.length !== 1) return reject("getPrimaryService error: service not found");
                 resolve(services[0]);
             })
-            .catch(error => reject(error));
+            .catch(function(error) {
+                reject(error);
+            });
         }.bind(this));
     };
     BluetoothGATTRemoteServer.prototype.getPrimaryServices = function(serviceUUID) {
@@ -488,11 +490,13 @@
         return new Promise(function(resolve, reject) {
             if (!characteristicUUID) return reject("getCharacteristic error: no characteristic specified");
             this.getCharacteristics(characteristicUUID)
-            .then(characteristics => {
+            .then(function(characteristics) {
                 if (characteristics.length !== 1) return reject("getCharacteristic error: characteristic not found");
                 resolve(characteristics[0]);
             })
-            .catch(error => reject(error));
+            .catch(function(error) {
+                reject(error);
+            });
         }.bind(this));
     };
     BluetoothGATTService.prototype.getCharacteristics = function(characteristicUUID) {
@@ -519,11 +523,13 @@
         return new Promise(function(resolve, reject) {
             if (!serviceUUID) return reject("getIncludedService error: no service specified");
             this.getIncludedServices(serviceUUID)
-            .then(services => {
+            .then(function(services) {
                 if (services.length !== 1) return reject("getIncludedService error: service not found");
                 resolve(services[0]);
             })
-            .catch(error => reject(error));
+            .catch(function(error) {
+                reject(error);
+            });
         }.bind(this));
     };
     BluetoothGATTService.prototype.getIncludedServices = function(serviceUUID) {
@@ -581,11 +587,13 @@
         return new Promise(function(resolve, reject) {
             if (!descriptorUUID) return reject("getDescriptor error: no descriptor specified");
             this.getDescriptors(descriptorUUID)
-            .then(descriptors => {
+            .then(function(descriptors) {
                 if (descriptors.length !== 1) return reject("getDescriptor error: descriptor not found");
                 resolve(descriptors[0]);
             })
-            .catch(error => reject(error));
+            .catch(function(error) {
+                reject(error);
+            });
         }.bind(this));
     };
     BluetoothGATTCharacteristic.prototype.getDescriptors = function(descriptorUUID) {
