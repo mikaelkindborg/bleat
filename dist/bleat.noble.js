@@ -51,6 +51,18 @@
         };
     }
 
+    function bufferToDataView(buffer) {
+        // Buffer to ArrayBuffer
+        var arrayBuffer = new Uint8Array(buffer).buffer;
+        return new DataView(arrayBuffer);
+    }
+
+    function dataViewToBuffer(dataView) {
+        // DataView to TypedArray
+        var typedArray = new Uint8Array(dataView.buffer);
+        return new new Buffer(typedArray);
+    }
+
     // https://github.com/sandeepmistry/noble
     if (noble) {
         bleat._addAdapter("noble", {
@@ -81,16 +93,15 @@
                             // First 2 bytes are 16-bit company identifier
                             var company = deviceInfo.advertisement.manufacturerData.readUInt16LE(0);
                             company = ("0000" + company.toString(16)).slice(-4);
-                            // Buffer to ArrayBuffer
-                            var data = new Uint8Array(deviceInfo.advertisement.manufacturerData).buffer.slice(2);
-                            manufacturerData[company] = data;
+                            // Remove company ID
+                            var buffer = deviceInfo.advertisement.manufacturerData.slice(2);
+                            manufacturerData[company] = bufferToDataView(buffer);
                         }
 
                         var serviceData = {};
                         if (deviceInfo.advertisement.serviceData) {
                             deviceInfo.advertisement.serviceData.forEach(function(serviceAdvert) {
-                                // Buffer to ArrayBuffer
-                                serviceData[serviceAdvert.uuid] = new Uint8Array(serviceAdvert.data).buffer;
+                                serviceData[serviceAdvert.uuid] = bufferToDataView(serviceAdvert.data);
                             });
                         }
 
@@ -225,8 +236,8 @@
 
                             characteristicInfo.on('data', function(data, isNotification) {
                                 if (isNotification === true && typeof this.charNotifies[charUUID] === "function") {
-                                    var arrayBuffer = new Uint8Array(data).buffer;
-                                    this.charNotifies[charUUID](arrayBuffer);
+                                    var dataView = bufferToDataView(data);
+                                    this.charNotifies[charUUID](dataView);
                                 }
                             }.bind(this));
                         }
@@ -259,12 +270,12 @@
             },
             readCharacteristic: function(handle, completeFn, errorFn) {
                 this.characteristicHandles[handle].read(checkForError(errorFn, function(data) {
-                    var arrayBuffer = new Uint8Array(data).buffer;
-                    completeFn(arrayBuffer);
+                    var dataView = bufferToDataView(data);
+                    completeFn(dataView);
                 }));
             },
-            writeCharacteristic: function(handle, arrayBuffer, completeFn, errorFn) {
-                var buffer = new Buffer(new Uint8Array(arrayBuffer));
+            writeCharacteristic: function(handle, dataView, completeFn, errorFn) {
+                var buffer = dataViewToBuffer(dataView);
                 this.characteristicHandles[handle].write(buffer, true, checkForError(errorFn, completeFn));
             },
             enableNotify: function(handle, notifyFn, completeFn, errorFn) {
@@ -292,12 +303,12 @@
             },
             readDescriptor: function(handle, completeFn, errorFn) {
                 this.descriptorHandles[handle].readValue(checkForError(errorFn, function(data) {
-                    var arrayBuffer = new Uint8Array(data).buffer;
-                    completeFn(arrayBuffer);                    
+                    var dataView = bufferToDataView(data);
+                    completeFn(dataView);
                 }));
             },
-            writeDescriptor: function(handle, arrayBuffer, completeFn, errorFn) {
-                var buffer = new Buffer(new Uint8Array(arrayBuffer));
+            writeDescriptor: function(handle, dataView, completeFn, errorFn) {
+                var buffer = dataViewToBuffer(dataView);
                 this.descriptorHandles[handle].writeValue(buffer, checkForError(errorFn, completeFn));
             }
         });

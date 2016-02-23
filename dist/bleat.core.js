@@ -614,26 +614,27 @@
     };
     BluetoothGATTCharacteristic.prototype.readValue = function() {
         return new Promise(function(resolve, reject) {
-            adapter.readCharacteristic(this._handle, function(arrayBuffer) {
-                this.value = arrayBuffer;
-                resolve(arrayBuffer);
+            adapter.readCharacteristic(this._handle, function(dataView) {
+                this.value = dataView;
+                resolve(dataView);
                 this.dispatchEvent({ type: "characteristicvaluechanged", bubbles: true });
             }.bind(this), wrapReject(reject, "readValue error"));
         }.bind(this));
     };
     BluetoothGATTCharacteristic.prototype.writeValue = function(bufferSource) {
         var arrayBuffer = bufferSource.buffer || bufferSource;
+        var dataView = new DataView(arrayBuffer);
         return new Promise(function(resolve, reject) {
-            adapter.writeCharacteristic(this._handle, arrayBuffer, function() {
-                this.value = arrayBuffer;
+            adapter.writeCharacteristic(this._handle, dataView, function() {
+                this.value = dataView;
                 resolve();
             }.bind(this), wrapReject(reject, "writeValue error"));
         }.bind(this));
     };
     BluetoothGATTCharacteristic.prototype.startNotifications = function() {
         return new Promise(function(resolve, reject) {
-            adapter.enableNotify(this._handle, function(arrayBuffer) {
-                this.value = arrayBuffer;
+            adapter.enableNotify(this._handle, function(dataView) {
+                this.value = dataView;
                 this.dispatchEvent({ type: "characteristicvaluechanged", bubbles: true });
             }.bind(this), resolve, wrapReject(reject, "startNotifications error"));
         }.bind(this));
@@ -661,17 +662,18 @@
     };
     BluetoothGATTDescriptor.prototype.readValue = function() {
         return new Promise(function(resolve, reject) {
-            adapter.readDescriptor(this._handle, function(arrayBuffer) {
-                this.value = arrayBuffer;
-                resolve(arrayBuffer);
+            adapter.readDescriptor(this._handle, function(dataView) {
+                this.value = dataView;
+                resolve(dataView);
             }.bind(this), wrapReject(reject, "readValue error"));
         }.bind(this));
     };
     BluetoothGATTDescriptor.prototype.writeValue = function(bufferSource) {
         var arrayBuffer = bufferSource.buffer || bufferSource;
+        var dataView = new DataView(arrayBuffer);
         return new Promise(function(resolve, reject) {
-            adapter.writeDescriptor(this._handle, arrayBuffer, function() {
-                this.value = arrayBuffer;
+            adapter.writeDescriptor(this._handle, dataView, function() {
+                this.value = dataView;
                 resolve();
             }.bind(this), wrapReject(reject, "writeValue error"));
         }.bind(this));

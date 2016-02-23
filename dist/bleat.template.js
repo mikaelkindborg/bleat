@@ -51,10 +51,10 @@
         discoverCharacteristics: function(handle, characteristicUUIDs, completeFn, errorFn) {},
         discoverDescriptors: function(handle, descriptorUUIDs, completeFn, errorFn) {},
         readCharacteristic: function(handle, completeFn, errorFn) {},
-        writeCharacteristic: function(handle, arrayBuffer, completeFn, errorFn) {},
+        writeCharacteristic: function(handle, dataView, completeFn, errorFn) {},
         enableNotify: function(handle, notifyFn, completeFn, errorFn) {},
         disableNotify: function(handle, completeFn, errorFn) {},
         readDescriptor: function(handle, completeFn, errorFn) {},
-        writeDescriptor: function(handle, arrayBuffer, completeFn, errorFn) {}
+        writeDescriptor: function(handle, dataView, completeFn, errorFn) {}
     });
 }));
