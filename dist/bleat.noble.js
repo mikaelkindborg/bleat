@@ -270,6 +270,9 @@
             },
             readCharacteristic: function(handle, completeFn, errorFn) {
                 this.characteristicHandles[handle].read(checkForError(errorFn, function(data) {
+                    console.log('typeof data: ' + typeof data)
+                    console.log(JSON.stringify(data))
+                    console.log(data)
                     var dataView = bufferToDataView(data);
                     completeFn(dataView);
                 }));

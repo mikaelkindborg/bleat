@@ -375,7 +375,7 @@
     var BluetoothDevice = function(properties) {
         this._handle = null;
 
-        this.id = "unknown"; 
+        this.id = "unknown";
         this.name = null;
         this.adData = {
             appearance: null,
@@ -681,6 +681,8 @@
         requestDevice: function(options) {
             return new Promise(function(resolve, reject) {
                 scan(options, function(deviceInfo, scanTimeout) {
+                    console.log("requestDevice deviceInfo:");
+                    console.log(deviceInfo);
                     if (scanTimeout) clearTimeout(scanTimeout);
                     adapter.stopScan();
                     resolve(new BluetoothDevice(deviceInfo));
