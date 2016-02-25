@@ -60,7 +60,7 @@
     function dataViewToBuffer(dataView) {
         // DataView to TypedArray
         var typedArray = new Uint8Array(dataView.buffer);
-        return new new Buffer(typedArray);
+        return new Buffer(typedArray);
     }
 
     // https://github.com/sandeepmistry/noble
